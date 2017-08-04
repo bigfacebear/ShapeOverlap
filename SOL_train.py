@@ -20,7 +20,7 @@ def train():
             locks, keys, labels = SOL.inputs(eval_data=False)
 
         # Build a graph that computes the logits predictions from the inference model
-        logits = SOL.inference(locks, keys)
+        logits = SOL.st_inference(locks, keys)
 
         # Calculate loss.
         loss = SOL.loss(logits, labels)

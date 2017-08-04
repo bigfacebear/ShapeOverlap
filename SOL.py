@@ -157,7 +157,7 @@ def localisation_net(input_tensor, eval=False, name='localisation_net'):
     CONV1_DEPTH = 16
     CONV2_DEPTH = 16
 
-    FC1_NUM = 1536
+    FC1_NUM = 786
     FC2_NUM = 384
 
     theta_param_num = 3
@@ -235,7 +235,7 @@ def spatial_transformer_layer(input_tensor, eval=False, name='spatial_transforme
         shape = input_tensor.get_shape().as_list()
         height, width = shape[1], shape[2]
         theta = localisation_net(input_tensor, eval=eval)
-        return rotate_and_translation_transformer(input_tensor, theta, (int(height * 2.0 / 3), int(width * 2.0 / 3)))
+        return rotate_and_translation_transformer(input_tensor, theta, (height, width))
 
 
 def inference(locks, keys, eval=False):
@@ -245,8 +245,33 @@ def inference(locks, keys, eval=False):
     ret = full_connection_layer(features, eval)
     return tf.reshape(ret, [FLAGS.batch_size])
 
+
+def st_inference(locks, keys, eval=False):
+    st_locks = spatial_transformer_layer(locks, eval=eval, name='st_locks')
+    st_keys = spatial_transformer_layer(keys, eval=eval, name='st_keys')
+    st_locks_bool = tf.cast(st_locks, dtype=tf.bool)
+    st_keys_bool = tf.cast(st_keys, dtype=tf.bool)
+    overlap = tf.logical_and(st_locks_bool, st_keys_bool)
+    # overlap = tf.concat([st_locks, st_keys], axis=3)
+    overlap = tf.cast(overlap, dtype=tf.float32)
+    nonzeros = tf.reduce_sum(overlap, axis=1)
+    # nonzeros = tf.count_nonzero(tf.reshape(overlap, [FLAGS.batch_size, -1]), axis=1)
+    # ret = full_connection_layer(overlap, eval=eval)
+    return nonzeros
+
+    # print('overlap', overlap.get_shape())
+    # overlap = tf.reshape(tf.cast(overlap, dtype=tf.int32), [FLAGS.batch_size, -1])
+    # print('overlap', overlap.get_shape())
+    # nonzeros = tf.reduce_sum(overlap, axis=1)
+    # print('nonzeros shape', nonzeros.get_shape())
+    # return tf.reshape(nonzeros, [FLAGS.batch_size])
+    # nonzeros = tf.count_nonzero(tf.reshape(overlap, [FLAGS.batch_size, -1]), axis=1)
+    # print('nonzeros shape', nonzeros.get_shape())
+    # return nonzeros
+
 def loss(logits, labels):
     labels = tf.cast(labels, tf.float32)
+    logits = tf.cast(logits, tf.float32)
     l = tf.reduce_mean(tf.square(logits - labels))
     tf.add_to_collection('losses', l)
     return l
@@ -265,6 +290,7 @@ def train(total_loss, global_step):
         tf.summary.scalar('learning_rate', lr)
 
         # train_op = tf.train.AdamOptimizer(learning_rate=lr).minimize(total_loss)
+        # return train_op
 
         # Generate moving averages of all losses and associated summaries.
         loss_averages_op = _add_loss_summaries(total_loss)

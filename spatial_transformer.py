@@ -183,29 +183,6 @@ def affine_transformer(U, theta, out_size, name='SpatialTransformer', **kwargs):
         return output
 
 
-def batch_transformer(U, thetas, out_size, name='BatchSpatialTransformer'):
-    """Batch Spatial Transformer Layer
-
-    Parameters
-    ----------
-
-    U : float
-        tensor of inputs [num_batch,height,width,num_channels]
-    thetas : float
-        a set of transformations for each input [num_batch,num_transforms,6]
-    out_size : int
-        the size of the output [out_height,out_width]
-
-    Returns: float
-        Tensor of size [num_batch*num_transforms,out_height,out_width,num_channels]
-    """
-    with tf.variable_scope(name):
-        num_batch, num_transforms = map(int, thetas.get_shape().as_list()[:2])
-        indices = [[i]*num_transforms for i in xrange(num_batch)]
-        input_repeated = tf.gather(U, tf.reshape(indices, [-1]))
-        return transformer(input_repeated, thetas, out_size)
-
-
 def rotate_and_translation_transformer(U, theta, out_size, name='rotate_and_translation_transformer'):
     def _interpolate(im, x, y, out_size):
         with tf.variable_scope('_interpolate'):
