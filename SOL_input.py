@@ -40,6 +40,7 @@ def inputs(eval_data, data_dir, batch_size):
         keys: Images. 4D tensor of [batch_size, IMAGE_SIZE, IMAGE_SIZE, 1] size.
         labels: Labels. 1D tensor of [batch_size] size.
     """
+
     overlap_areas_filename = os.path.join(data_dir, 'OVERLAP_AREAS')
     if not tf.gfile.Exists(overlap_areas_filename):
         raise ValueError('Failed to find file: ' + overlap_areas_filename)

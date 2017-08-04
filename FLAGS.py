@@ -1,7 +1,7 @@
 # Number of images to process in a batch.
 batch_size = 128
 # Path to the data directory.
-data_dir = "/home/bfb/Affinity/Dataset/filled_dataset_100000"
+data_dir = "./Dataset/filled_dataset_100000"
 # Train the model using fp16.
 use_fp16 = False
 

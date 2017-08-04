@@ -10,6 +10,7 @@ import tensorflow as tf
 import FLAGS
 import SOL_input
 from spatial_transformer import affine_transformer, rotate_and_translation_transformer
+from utils import maybe_download_and_extract
 
 # Global constants describing the MSHAPES data set.
 IMAGE_SIZE = FLAGS.IMAGE_SIZE
@@ -34,6 +35,8 @@ def inputs(eval_data):
     Raises:
       ValueError: If no data_dir
     """
+    maybe_download_and_extract(FLAGS.data_dir, FLAGS.DATA_URL)
+
     with tf.variable_scope('READ'):
         if not FLAGS.data_dir:
             raise ValueError('Please supply a data_dir')

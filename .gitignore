@@ -1,6 +1,6 @@
 .idea/
 *.pyc
 download/
-*dataset*/
+Dataset/
 ShapeOverlap_train*/
 ShapeOverlap_eval*/

@@ -1,6 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 import os
 import sys
 from six.moves import urllib as smurllib
@@ -8,6 +12,9 @@ import zipfile
 
 def maybe_download_and_extract(data_dir, data_url):
     """Downloads and extracts the zip from electronneutrino, if necessary"""
+    if os.path.exists(data_dir):
+        return
+
     download_directory = './download'
     if not os.path.exists(download_directory):
         os.makedirs(download_directory)
@@ -30,12 +37,15 @@ def maybe_download_and_extract(data_dir, data_url):
         statinfo = os.stat(filepath)
         print('Successfully downloaded', filename, statinfo.st_size, 'bytes.')
 
-    extracted_dir_path = ''.join(data_dir.split('/')[:-2])
-
+    extracted_dir_path = reduce(lambda p1, p2:os.path.join(p1, p2), data_dir.split('/')[:-1])
     if not os.path.exists(extracted_dir_path):
-        zip_ref = zipfile.ZipFile(filepath, 'r')
-        zip_ref.extractall(extracted_dir_path)
-        zip_ref.close()
+        os.makedirs(extracted_dir_path)
+
+    print('Extracting files...', end=' ')
+    zip_ref = zipfile.ZipFile(filepath, 'r')
+    zip_ref.extractall(extracted_dir_path)
+    zip_ref.close()
+    print('done')
 
 
 def print_progress_bar(iteration, total, prefix='', suffix='', decimals=1, length=100, fill="█"):
