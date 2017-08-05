@@ -118,8 +118,8 @@ def image_process(name, images, eval=False):
 
     return pool3
 
-def full_connection_layer(features, eval=False):
-    FC1_NUM = 1536
+def fully_connected_layer(features, eval=False):
+    FC1_NUM = 786
     FC2_NUM = 384
     # FC1
     with tf.variable_scope('FC1') as scope:
@@ -235,14 +235,14 @@ def spatial_transformer_layer(input_tensor, eval=False, name='spatial_transforme
         shape = input_tensor.get_shape().as_list()
         height, width = shape[1], shape[2]
         theta = localisation_net(input_tensor, eval=eval)
-        return rotate_and_translation_transformer(input_tensor, theta, (height, width))
+        return rotate_and_translation_transformer(input_tensor, theta, (height * 2 // 3, width * 2 // 3))
 
 
 def inference(locks, keys, eval=False):
     L_features = image_process('locks', locks, eval=eval)
     K_features = image_process('keys', keys, eval=eval)
     features = tf.concat([L_features, K_features], axis=3)
-    ret = full_connection_layer(features, eval)
+    ret = fully_connected_layer(features, eval)
     return tf.reshape(ret, [FLAGS.batch_size])
 
 
@@ -256,7 +256,7 @@ def st_inference(locks, keys, eval=False):
     overlap = tf.cast(overlap, dtype=tf.float32)
     nonzeros = tf.reduce_sum(overlap, axis=1)
     # nonzeros = tf.count_nonzero(tf.reshape(overlap, [FLAGS.batch_size, -1]), axis=1)
-    # ret = full_connection_layer(overlap, eval=eval)
+    # ret = fully_connected_layer(overlap, eval=eval)
     return nonzeros
 
     # print('overlap', overlap.get_shape())
@@ -268,6 +268,23 @@ def st_inference(locks, keys, eval=False):
     # nonzeros = tf.count_nonzero(tf.reshape(overlap, [FLAGS.batch_size, -1]), axis=1)
     # print('nonzeros shape', nonzeros.get_shape())
     # return nonzeros
+
+def matching_layer(L, K, name='matching_layer'):
+    with tf.variable_scope(name) as scope:
+        bs, h, w, d = L.get_shape().as_list()
+        L = tf.reshape(L, [bs, h * w, d])
+        K = tf.reshape(K, [bs, h * w, d])
+        K = tf.transpose(K, [0, 2, 1])
+        return tf.reshape(tf.matmul(L, K), [bs, h, w, h * w])
+
+def inference_mathing_layer(locks, keys, eval=False):
+    locks = spatial_transformer_layer(locks, eval=eval, name='locks')
+    locks_pool = tf.nn.avg_pool(locks, ksize=[1,2,2,1], strides=[1,2,2,1], padding='SAME', name='locks_pool')
+    keys = spatial_transformer_layer(keys, eval=eval, name='keys')
+    keys_pool = tf.nn.avg_pool(keys, ksize=[1,2,2,1], strides=[1,2,2,1], padding='SAME', name='locks_pool')
+    matched = matching_layer(locks_pool, keys_pool, name='matching')
+    return fully_connected_layer(matched, eval=eval)
+
 
 def loss(logits, labels):
     labels = tf.cast(labels, tf.float32)
