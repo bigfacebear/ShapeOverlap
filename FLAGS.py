@@ -2,6 +2,7 @@
 batch_size = 128
 # Path to the data directory.
 data_dir = "/cstor/xsede/users/xs-qczhao/Dataset/filled_dataset_notrans_150x150_100000"
+# data_dir = './Dataset/filled_dataset_notrans_150x150_100000'
 # Train the model using fp16.
 use_fp16 = False
 
@@ -24,7 +25,7 @@ NUM_EXAMPLES_PER_EPOCH_FOR_EVAL = 20000
 MOVING_AVERAGE_DECAY = 0.9999     # The decay to use for the moving average.
 NUM_EPOCHS_PER_DECAY = 5.0      # Epochs after which learning rate decays.
 LEARNING_RATE_DECAY_FACTOR = 0.5  # Learning rate decay factor.
-INITIAL_LEARNING_RATE = 0.01       # Initial learning rate.
+INITIAL_LEARNING_RATE = 0.1       # Initial learning rate.
 
 # If a model is trained with multiple GPUs, prefix all Op names with tower_name
 # to differentiate the operations. Note that this prefix is removed from the

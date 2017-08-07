@@ -2,11 +2,11 @@
 import tensorflow as tf
 
 # model parameters
-CONV1_DEPTH = 96
-CONV2_DEPTH = 192
-CONV3_DEPTH = 256
+CONV1_DEPTH = 96/2
+CONV2_DEPTH = 192/2
+CONV3_DEPTH = 256/2
 
-FC1_SIZE = 256
+FC1_SIZE = 256/2
 OUTPUT_SIZE = 1
 
 def inference(locks, keys, eval=False):

@@ -14,6 +14,7 @@ import FLAGS
 import models
 
 train_dir = '/cstor/xsede/users/xs-qczhao/train/ShapeOverlap_2ch_train'
+# train_dir = './ShapeOverlap_train'
 
 def train():
     with tf.Graph().as_default():

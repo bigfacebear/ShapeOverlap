@@ -54,7 +54,9 @@ def inputs(eval_data):
 
 
 def inference(locks, keys, eval=False):
-    return models.siamese_inference(locks, keys, eval)
+    batch_size = locks.get_shape().as_list()[0]
+    ret = models.siamese_inference(locks, keys, eval)
+    return tf.reshape(ret, [batch_size])
 
 
 # def st_inference(locks, keys, eval=False):
@@ -89,7 +91,7 @@ def inference(locks, keys, eval=False):
 
 def loss(logits, labels):
     labels = tf.cast(labels, tf.float32)
-    l = tf.reduce_sum(tf.square(logits - labels))
+    l = tf.reduce_mean(tf.square(logits - labels))
     tf.add_to_collection('losses', l)
     return l
 
