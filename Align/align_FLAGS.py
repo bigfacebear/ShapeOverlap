@@ -1,21 +1,21 @@
 # Number of images to process in a batch.
 batch_size = 128
 # Path to the data directory.
-data_dir = "./Dataset/filled_dataset_notrans_150x150_100000"
+data_dir = "/home/bfb/Affinity/Dataset/Area/area_dataset"
 # Train the model using fp16.
 use_fp16 = False
 
 # Directory where to write event logs.
-train_dir = './ShapeOverlap_train'
+train_dir = './align_train'
 # Number of batches to run.
-max_steps = 100000 #1000000
+max_steps = 25000 #1000000
 # Whether to log device placement.
 log_device_placement = False
 # How often to log results to the console.
-log_frequency = 1000
+log_frequency = 100
 
 # Global constants describing the MSHAPES data set.
-IMAGE_SIZE = 150
+IMAGE_SIZE = 200
 NUM_CLASSES = 1
 NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN = 80000
 NUM_EXAMPLES_PER_EPOCH_FOR_EVAL = 20000
@@ -32,9 +32,7 @@ INITIAL_LEARNING_RATE = 0.01       # Initial learning rate.
 TOWER_NAME = 'tower'
 
 # Where to download the MSHAPES dataset from
-# DATA_URL = 'https://electronneutrino.com/affinity/overlap/dataset.zip'
-DATA_URL = 'https://pandownload.zju.edu.cn/download/93c5378f642e4e499625d6f84b5b7f9d/76bb50a3fa9fb5671e6c0880ad14e1dc05878c5da6f2b6e7fd3136391d91bb8d/filled_dataset_notrans_150x150_100000.tar.gz'
-# DATA_URL = 'https://pandownload.zju.edu.cn/download/ea840a63bd334ae9a455288b92f3e240/1c6d94d225ed1112c0b05105c6f7f775f388faf2c8ab471766c478df5a3ab2ad/area_dataset.tar.gz'
+DATA_URL = 'https://electronneutrino.com/affinity/overlap/dataset.zip'
 
 NOTIFICATION_EMAIL = 'qc_zhao@outlook.com'
 
@@ -42,3 +40,15 @@ CHECK_DATASET = True
 
 RESTORE = False
 RESTORE_FROM = 'summaries/netstate/saved_state-3000'
+
+# The version of model to use.
+#   0: CIFAR-10 model
+#   1: preprocess input images respectively
+#   2: preprocess input images respectively with rotation invariance
+#   3: cross product
+#   4: Add matching layer between siamese networks and fully connected layers
+model_version = 4
+
+# Architecture parameters
+CONVOLUTIONAL_LAYER_DEPTH = 16
+KEEP_PROB = 0.5

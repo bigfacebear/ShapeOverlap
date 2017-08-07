@@ -9,6 +9,7 @@ import os
 import sys
 from six.moves import urllib as smurllib
 import zipfile
+import tarfile
 
 def maybe_download_and_extract(data_dir, data_url):
     """Downloads and extracts the zip from electronneutrino, if necessary"""
@@ -42,9 +43,12 @@ def maybe_download_and_extract(data_dir, data_url):
         os.makedirs(extracted_dir_path)
 
     print('Extracting files...', end=' ')
-    zip_ref = zipfile.ZipFile(filepath, 'r')
-    zip_ref.extractall(extracted_dir_path)
-    zip_ref.close()
+    # zip_ref = zipfile.ZipFile(filepath, 'r')
+    # zip_ref.extractall(extracted_dir_path)
+    # zip_ref.close()
+    tar = tarfile.open(filepath)
+    tar.extractall(extracted_dir_path)
+    tar.close()
     print('done')
 
 
