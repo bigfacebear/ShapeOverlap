@@ -13,6 +13,8 @@ import SOL
 import FLAGS
 import models
 
+train_dir = '/cstor/xsede/users/xs-qczhao/train/ShapeOverlap_siamese_train'
+
 def train():
     with tf.Graph().as_default():
         global_step = tf.contrib.framework.get_or_create_global_step()

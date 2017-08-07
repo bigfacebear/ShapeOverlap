@@ -13,6 +13,8 @@ import SOL
 import FLAGS
 import models
 
+train_dir = '/cstor/xsede/users/xs-qczhao/train/ShapeOverlap_2ch_train'
+
 def train():
     with tf.Graph().as_default():
         global_step = tf.contrib.framework.get_or_create_global_step()
@@ -35,7 +37,7 @@ def train():
         summary_op_merged = tf.summary.merge_all()
 
         with tf.Session() as sess:
-            train_writer = tf.summary.FileWriter(FLAGS.train_dir, sess.graph)
+            train_writer = tf.summary.FileWriter(train_dir, sess.graph)
             tf.set_random_seed(42)
             tf.global_variables_initializer().run()
 
@@ -62,7 +64,7 @@ def train():
                     print(format_str % (datetime.now(), (i + 1), loss_value,
                                         examples_per_sec, sec_per_batch))
 
-                    saver.save(sess, os.path.join(FLAGS.train_dir, 'ShapeOverlap_train.ckpt'))  # , global_step=i)
+                    saver.save(sess, os.path.join(train_dir, 'ShapeOverlap_train.ckpt'))  # , global_step=i)
                     summary_str = sess.run(summary_op_merged)
                     train_writer.add_summary(summary_str, i)
 
@@ -72,9 +74,9 @@ def train():
             print('Finished.')
 
 def main(argv=None):
-    if tf.gfile.Exists(FLAGS.train_dir):
-        tf.gfile.DeleteRecursively(FLAGS.train_dir)
-    tf.gfile.MakeDirs(FLAGS.train_dir)
+    if tf.gfile.Exists(train_dir):
+        tf.gfile.DeleteRecursively(train_dir)
+    tf.gfile.MakeDirs(train_dir)
 
     # Train the network!!
     print('Begin training...')
