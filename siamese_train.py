@@ -5,6 +5,7 @@ from __future__ import print_function
 import time
 from datetime import datetime
 import os
+import sys
 
 import tensorflow as tf
 import numpy as np
@@ -64,6 +65,7 @@ def train():
                                   'sec/batch)')
                     print(format_str % (datetime.now(), (i + 1), loss_value,
                                         examples_per_sec, sec_per_batch))
+                    sys.stdout.flush()
 
                     saver.save(sess, os.path.join(train_dir, 'ShapeOverlap_train.ckpt'))  # , global_step=i)
                     summary_str = sess.run(summary_op_merged)
