@@ -1,7 +1,3 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 from datetime import datetime
 import math
 import time
@@ -9,7 +5,8 @@ import time
 import numpy as np
 import tensorflow as tf
 
-import SOL
+import overlap
+import models
 
 FLAGS = tf.app.flags.FLAGS
 
@@ -39,7 +36,7 @@ def eval_once(saver, summary_writer, diff, summary_op):
     """
     with tf.Session() as sess:
         ckpt = tf.train.get_checkpoint_state(FLAGS.checkpoint_dir)
-        print("checkpoint dir =", ckpt.model_checkpoint_path)
+        print "checkpoint dir =", ckpt.model_checkpoint_path
         if ckpt and ckpt.model_checkpoint_path:
             # Restores from checkpoint
             saver.restore(sess, ckpt.model_checkpoint_path)
@@ -47,9 +44,9 @@ def eval_once(saver, summary_writer, diff, summary_op):
             #   /my-favorite-path/cifar10_train/model.ckpt-0,
             # extract global_step from it.
             global_step = ckpt.model_checkpoint_path.split('/')[-1].split('-')[-1]
-            print("global step =", global_step)
+            print "global step =", global_step
         else:
-            print('No checkpoint file found')
+            print 'No checkpoint file found'
             return
 
         # Start the queue runners.
@@ -70,12 +67,12 @@ def eval_once(saver, summary_writer, diff, summary_op):
                 step += 1
 
             # Compute precision @ 1.
-            print(len(results))
-            print(results)
+            print len(results)
+            print results
             results = np.array(results)
             average = np.average(results)
             variation = np.var(results)
-            print('%s: average difference = %.3f, variation of difference = %.3f' % (datetime.now(), average, variation))
+            print '%s: average difference = %.3f, variation of difference = %.3f' % (datetime.now(), average, variation)
 
             summary = tf.Summary()
             summary.ParseFromString(sess.run(summary_op))
@@ -92,9 +89,9 @@ def eval_once(saver, summary_writer, diff, summary_op):
 def evaluate():
     with tf.Graph().as_default() as g:
         eval_data = FLAGS.eval_data == 'test'
-        locks, keys, labels = SOL.inputs(eval_data=eval_data)
+        locks, keys, labels = overlap.inputs(eval_data=eval_data)
 
-        logits = SOL.inference(locks, keys, eval=True)
+        logits = models.siamese_inference(locks, keys, eval=True)
 
         diff = tf.abs(logits - tf.cast(labels, tf.float32))
 

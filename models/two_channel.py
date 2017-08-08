@@ -7,9 +7,8 @@ CONV2_DEPTH = 192/2
 CONV3_DEPTH = 256/2
 
 FC1_SIZE = 256/2
-OUTPUT_SIZE = 1
 
-def inference(locks, keys, eval=False):
+def inference(locks, keys, eval=False, output_size=1):
     # concat two inputs
     concat = tf.concat([locks, keys], axis=3)
     batch_size = concat.get_shape().as_list()[0]
@@ -65,7 +64,7 @@ def inference(locks, keys, eval=False):
                               kernel_regularizer=tf.nn.l2_loss)
     with tf.variable_scope('output'):
         fc2 = tf.layers.dense(fc1,
-                              units=OUTPUT_SIZE,
+                              units=output_size,
                               activation=tf.nn.relu,
                               use_bias=True,
                               kernel_initializer=tf.truncated_normal_initializer(stddev=0.01),

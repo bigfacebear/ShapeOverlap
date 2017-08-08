@@ -1,19 +1,20 @@
 # Number of images to process in a batch.
 batch_size = 128
+
 # Path to the data directory.
-data_dir = "/cstor/xsede/users/xs-qczhao/Dataset/filled_dataset_notrans_150x150_100000"
-# data_dir = './Dataset/filled_dataset_notrans_150x150_100000'
-# Train the model using fp16.
-use_fp16 = False
+data_dir = './Dataset/filled_dataset_notrans_150x150_100000'
+# data_dir = "/cstor/xsede/users/xs-qczhao/Dataset/filled_dataset_notrans_150x150_100000"
 
 # Directory where to write event logs.
-# train_dir = './ShapeOverlap_train'
+train_dir = './ShapeOverlap_train'
+# train_dir = '/cstor/xsede/users/xs-qczhao/ShapeOverlap_train'
+
 # Number of batches to run.
 max_steps = 100000 #1000000
 # Whether to log device placement.
 log_device_placement = False
 # How often to log results to the console.
-log_frequency = 1000
+log_frequency = 10
 
 # Global constants describing the MSHAPES data set.
 IMAGE_SIZE = 150
@@ -22,7 +23,6 @@ NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN = 80000
 NUM_EXAMPLES_PER_EPOCH_FOR_EVAL = 20000
 
 # Constants describing the training process.
-MOVING_AVERAGE_DECAY = 0.9999     # The decay to use for the moving average.
 NUM_EPOCHS_PER_DECAY = 5.0      # Epochs after which learning rate decays.
 LEARNING_RATE_DECAY_FACTOR = 0.5  # Learning rate decay factor.
 INITIAL_LEARNING_RATE = 0.1       # Initial learning rate.
@@ -43,3 +43,6 @@ CHECK_DATASET = True
 
 RESTORE = False
 RESTORE_FROM = 'summaries/netstate/saved_state-3000'
+
+# Train the model using fp16.
+use_fp16 = False

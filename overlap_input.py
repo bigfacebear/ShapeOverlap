@@ -1,7 +1,3 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 import os
 
 import pickle
@@ -16,7 +12,7 @@ NUM_EXAMPLES_PER_EPOCH_FOR_EVAL = FLAGS.NUM_EXAMPLES_PER_EPOCH_FOR_EVAL
 def read_pair(filename_queue):
     lock_image = decode_input(filename_queue[0])
     key_image = decode_input(filename_queue[1])
-    overlap_area = tf.cast(filename_queue[2], tf.int64)
+    overlap_area = tf.cast(filename_queue[2], tf.float32)
     return lock_image, key_image, overlap_area
 
 
@@ -84,7 +80,7 @@ def inputs(eval_data, data_dir, batch_size):
 
 def _generate_image_and_label_batch(lock_image, key_image, label, min_queue_examples,
                                     batch_size, shuffle):
-    print("Image dimensions: ", lock_image.get_shape())
+    print "Image dimensions: ", lock_image.get_shape()
     num_preprocess_threads = 16
     if shuffle:
         lock_images, key_images, label_batch = tf.train.shuffle_batch(
@@ -100,7 +96,7 @@ def _generate_image_and_label_batch(lock_image, key_image, label, min_queue_exam
             num_threads=num_preprocess_threads,
             capacity=min_queue_examples + 6 * batch_size)
 
-    print("Images dimensions: ", lock_images.get_shape())
+    print "Images dimensions: ", lock_images.get_shape()
 
     return lock_images, key_images, tf.reshape(label_batch, [batch_size])
 

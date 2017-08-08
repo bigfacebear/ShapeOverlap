@@ -15,68 +15,7 @@
 import tensorflow as tf
 
 
-def localisation_net(input_tensor, eval=False, name='localisation_net'):
-
-    CONV1_DEPTH = 32
-    CONV2_DEPTH = 64
-    FC1_SIZE = 128
-    OUTPUT_SIZE = 3
-
-    batch_size = input_tensor.get_shape().as_list()[0]
-
-    with tf.variable_scope(name):
-        with tf.variable_scope('conv1'):
-            conv1 = tf.layers.conv2d(merge,
-                                     filters=CONV1_DEPTH,
-                                     kernel_size=(5, 5),
-                                     strides=(1, 1),
-                                     padding='valid',
-                                     activation=tf.nn.relu,
-                                     use_bias=True,
-                                     kernel_initializer=tf.truncated_normal_initializer(stddev=0.01),
-                                     bias_initializer=tf.constant_initializer(0.1))
-        with tf.variable_scope('pool1'):
-            pool1 = tf.layers.average_pooling2d(conv1,
-                                                pool_size=(2, 2),
-                                                strides=(2, 2),
-                                                padding='valid')
-        with tf.variable_scope('conv2'):
-            conv2 = tf.layers.conv2d(pool1,
-                                     filters=CONV2_DEPTH,
-                                     kernel_size=(3, 3),
-                                     strides=(1, 1),
-                                     padding='valid',
-                                     activation=tf.nn.relu,
-                                     use_bias=True,
-                                     kernel_initializer=tf.truncated_normal_initializer(stddev=0.01),
-                                     bias_initializer=tf.constant_initializer(0.1))
-        with tf.variable_scope('pool2'):
-            pool2 = tf.layers.average_pooling2d(conv2,
-                                                pool_size=(2, 2),
-                                                strides=(2, 2),
-                                                padding='valid')
-        with tf.variable_scope('fc1'):
-            flatten = tf.reshape(pool2, shape=(batch_size, -1))
-            fc1 = tf.layers.dense(flatten,
-                                  units=FC1_SIZE,
-                                  activation=tf.nn.relu,
-                                  use_bias=True,
-                                  kernel_initializer=tf.truncated_normal_initializer(stddev=0.01),
-                                  bias_initializer=tf.constant_initializer(0.1),
-                                  kernel_regularizer=tf.nn.l2_loss)
-        with tf.variable_scope('output'):
-            fc2 = tf.layers.dense(fc1,
-                                  units=OUTPUT_SIZE,
-                                  activation=tf.nn.relu,
-                                  use_bias=True,
-                                  kernel_initializer=tf.truncated_normal_initializer(stddev=0.01),
-                                  bias_initializer=tf.constant_initializer(0.1),
-                                  kernel_regularizer=tf.nn.l2_loss)
-    return fc2
-
-
-
-def affine_transformer(U, theta, out_size, name='SpatialTransformer', **kwargs):
+def affine_transformer(U, theta, out_size, name='SpatialTransformer'):
     """Spatial Transformer Layer
 
     Implements a spatial transformer layer as described in [1]_.
@@ -244,7 +183,7 @@ def affine_transformer(U, theta, out_size, name='SpatialTransformer', **kwargs):
         return output
 
 
-def rotate_and_translation_transformer(U, theta, out_size, name='rotate_and_translation_transformer'):
+def rotate_and_translate_transformer(U, theta, out_size, name='rotate_and_translation_transformer'):
     def _interpolate(im, x, y, out_size):
         with tf.variable_scope('_interpolate'):
             # constants
@@ -345,12 +284,3 @@ def rotate_and_translation_transformer(U, theta, out_size, name='rotate_and_tran
     with tf.variable_scope(name):
         output = _transform(theta, U, out_size)
         return output
-
-
-if __name__ == '__main__':
-    U = tf.ones(shape=[128,200,200,3], dtype=tf.float32)
-    theta = tf.ones(shape=[128,3], dtype=tf.float32)
-    rotate_and_translation_transformer(U, theta, (150,150))
-    # s = tf.reshape(tf.stack([tf.range(5) for _ in range(3)], axis=1), [-1])
-    # with tf.Session() as sess:
-    #     print sess.run(s)

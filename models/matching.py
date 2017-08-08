@@ -6,8 +6,8 @@ CONV1_DEPTH = 96/2
 CONV2_DEPTH = 192/2
 CONV3_DEPTH = 256/2
 
-FC1_SIZE = 512/2
-FC2_SIZE = 512/2
+FC1_SIZE = 512
+FC2_SIZE = 512
 
 def inference(locks, keys, eval=False, output_size=1):
     # Merge locks batch and keys batch together
@@ -55,10 +55,16 @@ def inference(locks, keys, eval=False, output_size=1):
                                  use_bias=True,
                                  kernel_initializer=tf.truncated_normal_initializer(stddev=0.01),
                                  bias_initializer=tf.constant_initializer(0.1))
+    with tf.variable_scope('matching_layer') as scope:
+        L_features = conv3[:batch_size]
+        K_features = conv3[batch_size:]
+        bs, h, w, d = L_features.get_shape().as_list()
+        L = tf.reshape(L_features, [bs, h * w, d])
+        K = tf.reshape(K_features, [bs, h * w, d])
+        K = tf.transpose(K, [0, 2, 1])
+        matching_layer = tf.reshape(tf.matmul(L, K), [bs, h, w, h * w])
     with tf.variable_scope('fc1'):
-        locks = conv3[:batch_size]
-        keys = conv3[batch_size:]
-        flatten = tf.reshape(tf.concat((locks, keys), axis=3), shape=(batch_size, -1))
+        flatten = tf.reshape(matching_layer, shape=(batch_size, -1))
         fc1 = tf.layers.dense(flatten,
                               units=FC1_SIZE,
                               activation=tf.nn.relu,
