@@ -1,23 +1,32 @@
+import os
+
 # Number of images to process in a batch.
 batch_size = 128
 
-# Path to the data directory.
-data_dir = './Dataset/filled_dataset_notrans_150x150_100000'
-# data_dir = "/cstor/xsede/users/xs-qczhao/Dataset/filled_dataset_notrans_150x150_100000"
+local = True
 
-# Directory where to write event logs.
-train_dir = './ShapeOverlap_train'
-# train_dir = '/cstor/xsede/users/xs-qczhao/ShapeOverlap_train'
+if local:
+    dataset_dir = './Dataset'
+    train_dir = './ShapeOverlap_train'
+else:
+    dataset_dir = '/cstor/xsede/users/xs-qczhao/Dataset'
+    train_dir = '/cstor/xsede/users/xs-qczhao/ShapeOverlap_train'
+
+# dataset_name = 'filled_dataset_notrans_150x150_100000'
+dataset_name = 'filled_dataset_100000'
+# dataset_name = 'area_dataset'
+
+data_dir = os.path.join(dataset_dir, dataset_name)
 
 # Number of batches to run.
 max_steps = 100000 #1000000
 # Whether to log device placement.
 log_device_placement = False
 # How often to log results to the console.
-log_frequency = 10
+log_frequency = 1000
 
 # Global constants describing the MSHAPES data set.
-IMAGE_SIZE = 150
+IMAGE_SIZE = 200
 NUM_CLASSES = 1
 NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN = 80000
 NUM_EXAMPLES_PER_EPOCH_FOR_EVAL = 20000
