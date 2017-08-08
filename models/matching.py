@@ -55,9 +55,14 @@ def inference(locks, keys, eval=False, output_size=1):
                                  use_bias=True,
                                  kernel_initializer=tf.truncated_normal_initializer(stddev=0.01),
                                  bias_initializer=tf.constant_initializer(0.1))
+    with tf.variable_scope('pool3'):
+        pool3 = tf.layers.average_pooling2d(conv3,
+                                            pool_size=(2, 2),
+                                            strides=(2, 2),
+                                            padding='valid')
     with tf.variable_scope('matching_layer') as scope:
-        L_features = conv3[:batch_size]
-        K_features = conv3[batch_size:]
+        L_features = pool3[:batch_size]
+        K_features = pool3[batch_size:]
         bs, h, w, d = L_features.get_shape().as_list()
         L = tf.reshape(L_features, [bs, h * w, d])
         K = tf.reshape(K_features, [bs, h * w, d])

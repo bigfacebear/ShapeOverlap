@@ -7,7 +7,7 @@ import models
 from overlap_train import train
 import FLAGS
 
-train_dir = os.path.join(FLAGS.train_dir, 'transformer_siamese')
+train_dir = os.path.join(FLAGS.train_dir, 'transformer_matching')
 
 def inference(locks, keys, eval=False):
     batch_size, height, width, _ = locks.get_shape().as_list()

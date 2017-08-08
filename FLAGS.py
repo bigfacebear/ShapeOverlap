@@ -23,7 +23,7 @@ max_steps = 100000 #1000000
 # Whether to log device placement.
 log_device_placement = False
 # How often to log results to the console.
-log_frequency = 1000
+log_frequency = 10
 
 # Global constants describing the MSHAPES data set.
 IMAGE_SIZE = 200
