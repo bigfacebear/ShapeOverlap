@@ -32,6 +32,8 @@ def train(train_dir, inference):
             train_writer = tf.summary.FileWriter(train_dir, sess.graph)
             tf.set_random_seed(42)
             tf.global_variables_initializer().run()
+
+            # the initialize op to re-initialize the dummy node in every training step
             dummy_init_op = tf.variables_initializer(tf.get_collection('dummy'))
 
             coord = tf.train.Coordinator()
@@ -39,7 +41,7 @@ def train(train_dir, inference):
 
             start_time = time.time()
             for i in xrange(FLAGS.max_steps):
-                dummy_init_op.run()
+                dummy_init_op.run() # re-initialize the dummy node (to 1.0)
                 _, my_loss = sess.run([train_op, loss])
 
                 if (i + 1) % FLAGS.log_frequency == 0:

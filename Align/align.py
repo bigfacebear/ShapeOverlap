@@ -260,12 +260,17 @@ def inference(images, eval=False):
     :return: Logits
     """
     tran_images = spatial_transformer_layer(images, eval=eval, name='spatial_transformer')
+    tran_images = tf.sign(tran_images)
     area = tf.reduce_sum(tf.reshape(tran_images, [FLAGS.batch_size, -1]), axis=1, keep_dims=True)
+
+    dummy = tf.Variable(1.0)
+    tf.add_to_collection('dummy', dummy)
+    area = tf.multiply(dummy, area)
+    return area
     # area = tf.reshape(area, [FLAGS.batch_size, 1])
 
     # out = dummy_layer(area)
 
-    return tf.reshape(area, [FLAGS.batch_size])
 
 
 def loss(logits, labels):
