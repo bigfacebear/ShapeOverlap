@@ -3,7 +3,7 @@
 #SBATCH --job-name=siamese_trans
 #SBATCH --output=/home/xsede/users/xs-qczhao/outputs/trans_siamese.txt
 #
-#SBATCH --time=15:00:00
+#SBATCH --time=10:00:00
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=1
 #SBATCH --mem-per-cpu=12800

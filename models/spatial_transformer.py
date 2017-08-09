@@ -100,8 +100,6 @@ def affine_transformer(U, theta, out_size, name='SpatialTransformer'):
             idx_c = base_y0 + x1
             idx_d = base_y1 + x1
 
-            print 'idx_a shape', idx_a.get_shape().as_list()
-
             # use indices to lookup pixels in the flat image and restore
             # channels dim
             im_flat = tf.reshape(im, tf.stack([-1, channels]))

@@ -2,12 +2,12 @@
 import tensorflow as tf
 
 # model parameters
-CONV1_DEPTH = 96/2
-CONV2_DEPTH = 192/2
-CONV3_DEPTH = 256/2
+CONV1_DEPTH = 96/4
+CONV2_DEPTH = 192/4
+CONV3_DEPTH = 256/4
 
-FC1_SIZE = 512/2
-FC2_SIZE = 512/2
+FC1_SIZE = 512/4
+FC2_SIZE = 512/4
 
 def inference(locks, keys, eval=False, output_size=1):
     # Merge locks batch and keys batch together
