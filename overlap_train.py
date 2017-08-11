@@ -33,15 +33,11 @@ def train(train_dir, inference):
             tf.set_random_seed(42)
             tf.global_variables_initializer().run()
 
-            # the initialize op to re-initialize the dummy node in every training step
-            dummy_init_op = tf.variables_initializer(tf.get_collection('dummy'))
-
             coord = tf.train.Coordinator()
             threads = tf.train.start_queue_runners(coord=coord, sess=sess)
 
             start_time = time.time()
             for i in xrange(FLAGS.max_steps):
-                dummy_init_op.run() # re-initialize the dummy node (to 1.0)
                 _, my_loss = sess.run([train_op, loss])
 
                 if (i + 1) % FLAGS.log_frequency == 0:

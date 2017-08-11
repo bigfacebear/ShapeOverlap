@@ -182,40 +182,111 @@ def affine_transformer(U, theta, out_size, name='SpatialTransformer'):
 
 
 def rotate_and_translate_transformer(U, theta, out_size, name='rotate_and_translation_transformer'):
+    # def _interpolate(im, x, y, out_size):
+    #     with tf.variable_scope('_interpolate'):
+    #         # constants
+    #         im_shape = im.get_shape().as_list()
+    #         num_batch = im_shape[0]
+    #         height = im_shape[1]
+    #         width = im_shape[2]
+    #         channels = im_shape[3]
+    #
+    #         x = tf.cast(x, dtype=tf.float32)
+    #         y = tf.cast(y, dtype=tf.float32)
+    #         height_f = tf.cast(height, dtype=tf.float32)
+    #         width_f = tf.cast(width, dtype=tf.float32)
+    #         out_height = out_size[0]
+    #         out_width = out_size[1]
+    #         zero = tf.zeros([], dtype=tf.int32)
+    #         max_y = tf.cast(tf.shape(im)[1] - 1, dtype=tf.int32)
+    #         max_x = tf.cast(tf.shape(im)[2] - 1, dtype=tf.int32)
+    #
+    #         # scale indices from [-1, 1] to [0, width/height]
+    #         # nearest
+    #         _x = tf.cast((x + 1.0)*(width_f) / 2.0 + 0.5, dtype=tf.int32)
+    #         _y = tf.cast((y + 1.0)*(height_f) / 2.0 + 0.5, dtype=tf.int32)
+    #         _x = tf.clip_by_value(_x, zero, max_x)
+    #         _y = tf.clip_by_value(_y, zero, max_y)
+    #
+    #         batch_range = tf.range(num_batch) * width * height
+    #         base_batch = tf.reshape(tf.stack([batch_range for _ in range(out_height*out_width)], axis=1), [-1])
+    #         base_y = base_batch + _y * width
+    #         idx = base_y + _x
+    #         im_flat = tf.reshape(im, tf.stack([-1, channels]))
+    #         output = tf.gather(im_flat, idx)
+    #         return output
+
+    def _repeat(x, n_repeats):
+        with tf.variable_scope('_repeat'):
+            rep = tf.transpose(
+                tf.expand_dims(tf.ones(shape=tf.stack([n_repeats, ])), 1), [1, 0])
+            rep = tf.cast(rep, 'int32')
+            x = tf.matmul(tf.reshape(x, (-1, 1)), rep)
+            return tf.reshape(x, [-1])
+
     def _interpolate(im, x, y, out_size):
         with tf.variable_scope('_interpolate'):
             # constants
-            im_shape = im.get_shape().as_list()
-            num_batch = im_shape[0]
-            height = im_shape[1]
-            width = im_shape[2]
-            channels = im_shape[3]
+            num_batch = tf.shape(im)[0]
+            height = tf.shape(im)[1]
+            width = tf.shape(im)[2]
+            channels = tf.shape(im)[3]
 
-            x = tf.cast(x, dtype=tf.float32)
-            y = tf.cast(y, dtype=tf.float32)
-            height_f = tf.cast(height, dtype=tf.float32)
-            width_f = tf.cast(width, dtype=tf.float32)
+            x = tf.cast(x, 'float32')
+            y = tf.cast(y, 'float32')
+            height_f = tf.cast(height, 'float32')
+            width_f = tf.cast(width, 'float32')
             out_height = out_size[0]
             out_width = out_size[1]
-            zero = tf.zeros([], dtype=tf.int32)
-            max_y = tf.cast(tf.shape(im)[1] - 1, dtype=tf.int32)
-            max_x = tf.cast(tf.shape(im)[2] - 1, dtype=tf.int32)
+            zero = tf.zeros([], dtype='int32')
+            max_y = tf.cast(tf.shape(im)[1] - 1, 'int32')
+            max_x = tf.cast(tf.shape(im)[2] - 1, 'int32')
 
             # scale indices from [-1, 1] to [0, width/height]
-            # nearest
-            _x = tf.cast((x + 1.0)*(width_f) / 2.0 + 0.5, dtype=tf.int32)
-            _y = tf.cast((y + 1.0)*(height_f) / 2.0 + 0.5, dtype=tf.int32)
-            _x = tf.clip_by_value(_x, zero, max_x)
-            _y = tf.clip_by_value(_y, zero, max_y)
+            x = (x + 1.0)*(width_f) / 2.0
+            y = (y + 1.0)*(height_f) / 2.0
 
-            batch_range = tf.range(num_batch) * width * height
-            base_batch = tf.reshape(tf.stack([batch_range for _ in range(out_height*out_width)], axis=1), [-1])
-            base_y = base_batch + _y * width
-            idx = base_y + _x
+            # do sampling
+            x0 = tf.cast(tf.floor(x), 'int32')
+            x1 = x0 + 1
+            y0 = tf.cast(tf.floor(y), 'int32')
+            y1 = y0 + 1
+
+            x0 = tf.clip_by_value(x0, zero, max_x)
+            x1 = tf.clip_by_value(x1, zero, max_x)
+            y0 = tf.clip_by_value(y0, zero, max_y)
+            y1 = tf.clip_by_value(y1, zero, max_y)
+            dim2 = width
+            dim1 = width*height
+            base = _repeat(tf.range(num_batch)*dim1, out_height*out_width)  # [batch_num, oh * ow]
+            base_y0 = base + y0*dim2
+            base_y1 = base + y1*dim2
+            idx_a = base_y0 + x0
+            idx_b = base_y1 + x0
+            idx_c = base_y0 + x1
+            idx_d = base_y1 + x1
+
+            # use indices to lookup pixels in the flat image and restore
+            # channels dim
             im_flat = tf.reshape(im, tf.stack([-1, channels]))
-            output = tf.gather(im_flat, idx)
+            im_flat = tf.cast(im_flat, 'float32')
+            Ia = tf.gather(im_flat, idx_a)
+            Ib = tf.gather(im_flat, idx_b)
+            Ic = tf.gather(im_flat, idx_c)
+            Id = tf.gather(im_flat, idx_d)
+
+            # and finally calculate interpolated values
+            x0_f = tf.cast(x0, 'float32')
+            x1_f = tf.cast(x1, 'float32')
+            y0_f = tf.cast(y0, 'float32')
+            y1_f = tf.cast(y1, 'float32')
+            wa = tf.expand_dims(((x1_f-x) * (y1_f-y)), 1)
+            wb = tf.expand_dims(((x1_f-x) * (y-y0_f)), 1)
+            wc = tf.expand_dims(((x-x0_f) * (y1_f-y)), 1)
+            wd = tf.expand_dims(((x-x0_f) * (y-y0_f)), 1)
+            output = tf.add_n([wa*Ia, wb*Ib, wc*Ic, wd*Id])
             return output
-        
+
     def _meshgrid(height, width):
         with tf.variable_scope('_meshgrid'):
             # This should be equivalent to:

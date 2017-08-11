@@ -32,39 +32,75 @@ LEARNING_RATE_DECAY_FACTOR = FLAGS.LEARNING_RATE_DECAY_FACTOR  # Learning rate d
 INITIAL_LEARNING_RATE = FLAGS.INITIAL_LEARNING_RATE  # Initial learning rate.
 
 def rotate_and_translation_transformer(U, theta, out_size, name='rotate_and_translation_transformer'):
+    def _repeat(x, n_repeats):
+        with tf.variable_scope('_repeat'):
+            rep = tf.transpose(
+                tf.expand_dims(tf.ones(shape=tf.stack([n_repeats, ])), 1), [1, 0])
+            rep = tf.cast(rep, 'int32')
+            x = tf.matmul(tf.reshape(x, (-1, 1)), rep)
+            return tf.reshape(x, [-1])
+
     def _interpolate(im, x, y, out_size):
         with tf.variable_scope('_interpolate'):
             # constants
-            im_shape = im.get_shape().as_list()
-            num_batch = im_shape[0]
-            height = im_shape[1]
-            width = im_shape[2]
-            channels = im_shape[3]
+            num_batch = tf.shape(im)[0]
+            height = tf.shape(im)[1]
+            width = tf.shape(im)[2]
+            channels = tf.shape(im)[3]
 
-            x = tf.cast(x, dtype=tf.float32)
-            y = tf.cast(y, dtype=tf.float32)
-            height_f = tf.cast(height, dtype=tf.float32)
-            width_f = tf.cast(width, dtype=tf.float32)
+            x = tf.cast(x, 'float32')
+            y = tf.cast(y, 'float32')
+            height_f = tf.cast(height, 'float32')
+            width_f = tf.cast(width, 'float32')
             out_height = out_size[0]
             out_width = out_size[1]
-            zero = tf.zeros([], dtype=tf.int32)
-            max_y = tf.cast(tf.shape(im)[1] - 1, dtype=tf.int32)
-            max_x = tf.cast(tf.shape(im)[2] - 1, dtype=tf.int32)
+            zero = tf.zeros([], dtype='int32')
+            max_y = tf.cast(tf.shape(im)[1] - 1, 'int32')
+            max_x = tf.cast(tf.shape(im)[2] - 1, 'int32')
 
             # scale indices from [-1, 1] to [0, width/height]
-            # nearest
-            _x = tf.cast((x + 1.0) * (width_f) / 2.0 + 0.5, dtype=tf.int32)
-            _y = tf.cast((y + 1.0) * (height_f) / 2.0 + 0.5, dtype=tf.int32)
-            _x = tf.clip_by_value(_x, zero, max_x)
-            _y = tf.clip_by_value(_y, zero, max_y)
+            x = (x + 1.0)*(width_f) / 2.0
+            y = (y + 1.0)*(height_f) / 2.0
 
-            batch_range = tf.range(num_batch) * width * height
-            base_batch = tf.reshape(tf.stack([batch_range for _ in range(out_height * out_width)], axis=1), [-1])
-            base_y = base_batch + _y * width
-            idx = base_y + _x
+            # do sampling
+            x0 = tf.cast(tf.floor(x), 'int32')
+            x1 = x0 + 1
+            y0 = tf.cast(tf.floor(y), 'int32')
+            y1 = y0 + 1
+
+            x0 = tf.clip_by_value(x0, zero, max_x)
+            x1 = tf.clip_by_value(x1, zero, max_x)
+            y0 = tf.clip_by_value(y0, zero, max_y)
+            y1 = tf.clip_by_value(y1, zero, max_y)
+            dim2 = width
+            dim1 = width*height
+            base = _repeat(tf.range(num_batch)*dim1, out_height*out_width)  # [batch_num, oh * ow]
+            base_y0 = base + y0*dim2
+            base_y1 = base + y1*dim2
+            idx_a = base_y0 + x0
+            idx_b = base_y1 + x0
+            idx_c = base_y0 + x1
+            idx_d = base_y1 + x1
+
+            # use indices to lookup pixels in the flat image and restore
+            # channels dim
             im_flat = tf.reshape(im, tf.stack([-1, channels]))
-            output = tf.gather(im_flat, idx)
-            return output
+            im_flat = tf.cast(im_flat, 'float32')
+            Ia = tf.gather(im_flat, idx_a)
+            Ib = tf.gather(im_flat, idx_b)
+            Ic = tf.gather(im_flat, idx_c)
+            Id = tf.gather(im_flat, idx_d)
+
+            # and finally calculate interpolated values
+            x0_f = tf.cast(x0, 'float32')
+            x1_f = tf.cast(x1, 'float32')
+            y0_f = tf.cast(y0, 'float32')
+            y1_f = tf.cast(y1, 'float32')
+            wa = tf.expand_dims(((x1_f-x) * (y1_f-y)), 1)
+            wb = tf.expand_dims(((x1_f-x) * (y-y0_f)), 1)
+            wc = tf.expand_dims(((x-x0_f) * (y1_f-y)), 1)
+            wd = tf.expand_dims(((x-x0_f) * (y-y0_f)), 1)
+            output = tf.add_n([wa*Ia, wb*Ib, wc*Ic, wd*Id])
 
     def _meshgrid(height, width):
         with tf.variable_scope('_meshgrid'):
@@ -261,90 +297,94 @@ def inference(images, eval=False):
     """
     tran_images = spatial_transformer_layer(images, eval=eval, name='spatial_transformer')
     tran_images = tf.sign(tran_images)
-    area = tf.reduce_sum(tf.reshape(tran_images, [FLAGS.batch_size, -1]), axis=1, keep_dims=True)
-
-    dummy = tf.Variable(1.0)
-    tf.add_to_collection('dummy', dummy)
-    area = tf.multiply(dummy, area)
+    area = tf.reduce_sum(tf.reshape(tran_images, [FLAGS.batch_size, -1]), axis=1)
+    # dummy = tf.Variable(1.0)
+    # tf.add_to_collection('dummy', dummy)
+    # area = tf.multiply(dummy, area)
     return area
     # area = tf.reshape(area, [FLAGS.batch_size, 1])
 
     # out = dummy_layer(area)
 
 
-
 def loss(logits, labels):
-    """Calculates the cross-entropy loss.
-    Args:
-      logits: Logits from inference().
-      labels: Labels from inputs(). 1-D tensor
-              of shape [batch_size]
-    Returns:
-      Loss tensor of type float.
-    """
-    # Calculate the average cross entropy loss across the batch.
     logits = tf.cast(logits, tf.float32)
     labels = tf.cast(labels, tf.float32)
-    l = tf.reduce_sum(tf.square(logits - labels))
-    tf.add_to_collection('losses', l)
+    l = tf.reduce_mean(tf.square(tf.divide(labels - logits, labels)))
+    tf.summary.scalar('loss', l)
     return l
 
-
-
 def train(total_loss, global_step):
-    """
-    Train MSHAPES model.
-    Create an optimizer and apply to all trainable variables. Add moving
-    average for all trainable variables.
-
-    :param total_loss: Total loss from loss().
-    :param global_step: Integer Variable counting the number of training steps processed.
-    :return: op for training.
-    """
-    # Variables that affect learning rate.
     with tf.variable_scope('train_op'):
-        num_batches_per_epoch = NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN / FLAGS.batch_size
-        decay_steps = int(num_batches_per_epoch * NUM_EPOCHS_PER_DECAY)
+        num_batches_per_epoch = FLAGS.NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN / FLAGS.batch_size
+        decay_steps = int(num_batches_per_epoch * FLAGS.NUM_EPOCHS_PER_DECAY)
 
         # Decay the learning rate exponentially based on the number of steps.
-        lr = tf.train.exponential_decay(INITIAL_LEARNING_RATE,
+        lr = tf.train.exponential_decay(FLAGS.INITIAL_LEARNING_RATE,
                                         global_step,
                                         decay_steps,
-                                        LEARNING_RATE_DECAY_FACTOR,
+                                        FLAGS.LEARNING_RATE_DECAY_FACTOR,
                                         staircase=True)
         tf.summary.scalar('learning_rate', lr)
 
-        # train_op = tf.train.AdamOptimizer(learning_rate=lr).minimize(total_loss)
-
-        # Generate moving averages of all losses and associated summaries.
-        loss_averages_op = _add_loss_summaries(total_loss)
-
-        # Compute gradients.
-        with tf.control_dependencies([loss_averages_op]):
-            opt = tf.train.AdamOptimizer(learning_rate=lr)
-            grads = opt.compute_gradients(total_loss)
-
-        # Apply gradients.
-        apply_gradient_op = opt.apply_gradients(grads, global_step=global_step)
-
-        # Add histograms for trainable variables.
-        for var in tf.trainable_variables():
-            tf.summary.histogram(var.op.name, var)
-
-        # Add histograms for gradients.
-        for grad, var in grads:
-            if grad is not None:
-                tf.summary.histogram(var.op.name + '/gradients', grad)
-
-        # Track the moving averages of all trainable variables.
-        variable_averages = tf.train.ExponentialMovingAverage(
-            MOVING_AVERAGE_DECAY, global_step)
-        variables_averages_op = variable_averages.apply(tf.trainable_variables())
-
-        with tf.control_dependencies([apply_gradient_op, variables_averages_op]):
-            train_op = tf.no_op(name='train')
+        train_op = tf.train.AdamOptimizer(learning_rate=lr).minimize(total_loss)
 
     return train_op
+
+# def train(total_loss, global_step):
+#     """
+#     Train MSHAPES model.
+#     Create an optimizer and apply to all trainable variables. Add moving
+#     average for all trainable variables.
+#
+#     :param total_loss: Total loss from loss().
+#     :param global_step: Integer Variable counting the number of training steps processed.
+#     :return: op for training.
+#     """
+#     # Variables that affect learning rate.
+#     with tf.variable_scope('train_op'):
+#         num_batches_per_epoch = NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN / FLAGS.batch_size
+#         decay_steps = int(num_batches_per_epoch * NUM_EPOCHS_PER_DECAY)
+#
+#         # Decay the learning rate exponentially based on the number of steps.
+#         lr = tf.train.exponential_decay(INITIAL_LEARNING_RATE,
+#                                         global_step,
+#                                         decay_steps,
+#                                         LEARNING_RATE_DECAY_FACTOR,
+#                                         staircase=True)
+#         tf.summary.scalar('learning_rate', lr)
+#
+#         # train_op = tf.train.AdamOptimizer(learning_rate=lr).minimize(total_loss)
+#
+#         # Generate moving averages of all losses and associated summaries.
+#         loss_averages_op = _add_loss_summaries(total_loss)
+#
+#         # Compute gradients.
+#         with tf.control_dependencies([loss_averages_op]):
+#             opt = tf.train.AdamOptimizer(learning_rate=lr)
+#             grads = opt.compute_gradients(total_loss)
+#
+#         # Apply gradients.
+#         apply_gradient_op = opt.apply_gradients(grads, global_step=global_step)
+#
+#         # Add histograms for trainable variables.
+#         for var in tf.trainable_variables():
+#             tf.summary.histogram(var.op.name, var)
+#
+#         # Add histograms for gradients.
+#         for grad, var in grads:
+#             if grad is not None:
+#                 tf.summary.histogram(var.op.name + '/gradients', grad)
+#
+#         # Track the moving averages of all trainable variables.
+#         variable_averages = tf.train.ExponentialMovingAverage(
+#             MOVING_AVERAGE_DECAY, global_step)
+#         variables_averages_op = variable_averages.apply(tf.trainable_variables())
+#
+#         with tf.control_dependencies([apply_gradient_op, variables_averages_op]):
+#             train_op = tf.no_op(name='train')
+#
+#     return train_op
 
 
 def _activation_summary(x):

@@ -17,9 +17,6 @@ def inference(locks, keys, eval=False):
     locks = tf.sign(locks)
     overlap = tf.multiply(keys, locks)  # calculate overlap
     area = tf.reduce_sum(tf.reshape(overlap, (batch_size, -1)), axis=1)
-    dummy = tf.Variable(1.0)
-    tf.add_to_collection('dummy', dummy)
-    area = tf.multiply(dummy, area)
     return area
 
 def main(argv=None):
